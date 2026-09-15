@@ -447,16 +447,6 @@ export async function createPixiMediaScene(
     options.annotationOverlayStyle,
     options.keypointStyle,
   );
-  const maskBrushPreview = options.maskBrush
-    ? createPixiMaskBrushPreview({
-        CanvasSource,
-        Container,
-        Graphics,
-        Sprite,
-        Texture,
-        preview: options.maskBrush,
-      })
-    : undefined;
   const initialMaskPreparationStyle = resolveMaskPreparationStyle();
   let maskLayer = initialMaskPreparationStyle
     ? createPixiMaskLayer({
@@ -518,6 +508,17 @@ export async function createPixiMediaScene(
   }
 
   const renderScheduler = createSceneRenderScheduler(() => app.render());
+  const maskBrushPreview = options.maskBrush
+    ? createPixiMaskBrushPreview({
+        CanvasSource,
+        Container,
+        Graphics,
+        Sprite,
+        Texture,
+        preview: options.maskBrush,
+        onInvalidate: frameChannel ? renderNow : undefined,
+      })
+    : undefined;
   let appliedPresentation: MediaRendererPresentation | undefined;
   let mediaCompositor: MediaCompositor | undefined;
   let presentedFrameSerial = 0;

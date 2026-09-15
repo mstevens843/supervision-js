@@ -16,6 +16,7 @@ import type {
 } from "./media-renderer-scene";
 import type { MediaRendererPresentation } from "#types/media-renderer";
 import type { PresentedVideoFrame } from "./presented-frame-channel";
+import { createMaskBrushEditor } from "#editing/mask-brush-editor";
 import { MediaRendererFit } from "#types/media-renderer";
 
 const pixiMock = vi.hoisted(() => ({
@@ -23,7 +24,9 @@ const pixiMock = vi.hoisted(() => ({
   externalSources: [] as MockExternalSource[],
   displayFilters: [] as unknown[],
   extractCanvas: vi.fn(() => ({ height: 240, width: 320 })),
+  init: vi.fn(async (): Promise<void> => {}),
   render: vi.fn(),
+  cursorCircles: new Map<object, { x: number; y: number; radius: number }>(),
   sprites: [] as PaintedSprite[],
   textures: [] as MockTextureInstance[],
   tickerAdd: vi.fn(),
@@ -91,7 +94,7 @@ vi.mock("pixi.js", () => {
     ticker = { add: pixiMock.tickerAdd, remove: pixiMock.tickerRemove };
     cancelResize = vi.fn();
     destroy = vi.fn();
-    init = vi.fn(async () => undefined);
+    init = pixiMock.init;
     render = pixiMock.render;
     resize = vi.fn();
   }
@@ -110,7 +113,14 @@ vi.mock("pixi.js", () => {
   }
 
   class Graphics extends Container {
-    clear = vi.fn(() => this);
+    circle = vi.fn((x: number, y: number, radius: number) => {
+      pixiMock.cursorCircles.set(this, { x, y, radius });
+      return this;
+    });
+    clear = vi.fn(() => {
+      pixiMock.cursorCircles.delete(this);
+      return this;
+    });
     fill = vi.fn(() => this);
     rect = vi.fn(() => this);
     roundRect = vi.fn(() => this);
@@ -194,6 +204,7 @@ vi.mock("pixi.js", () => {
   }
 
   class Texture {
+    destroy = vi.fn();
     readonly dynamic: boolean;
     readonly frame?: { height: number; width: number; x: number; y: number };
     readonly orig: { height: number; width: number };
@@ -228,6 +239,7 @@ vi.mock("pixi.js", () => {
   }
 
   class CanvasSource {
+    destroy = vi.fn();
     readonly height: number;
     readonly width: number;
     update = vi.fn();
@@ -328,11 +340,51 @@ vi.mock("pixi.js/gif", () => ({ GifSprite: class {} }));
 /** Shared so a test can see what the staging fallback drew into it. */
 const stagingContext = { drawImage: vi.fn() };
 
+function createBrushCanvas(): HTMLCanvasElement {
+  const circles: Array<{ x: number; y: number; radius: number }> = [];
+  const context = {
+    save() {},
+    restore() {},
+    beginPath() {},
+    clearRect() {
+      circles.length = 0;
+    },
+    arc(x: number, y: number, radius: number) {
+      circles.push({ x, y, radius });
+    },
+    fill() {},
+    getImageData(x: number, y: number, width: number, height: number) {
+      const data = new Uint8ClampedArray(width * height * 4);
+      for (let row = 0; row < height; row += 1) {
+        for (let column = 0; column < width; column += 1) {
+          if (
+            circles.some(
+              (circle) =>
+                Math.hypot(
+                  x + column + 0.5 - circle.x,
+                  y + row + 0.5 - circle.y,
+                ) <= circle.radius,
+            )
+          ) {
+            data[(row * width + column) * 4 + 3] = 255;
+          }
+        }
+      }
+      return { data, width, height };
+    },
+  };
+  return {
+    width: 320,
+    height: 240,
+    getContext: () => context,
+  } as unknown as HTMLCanvasElement;
+}
+
 const documentMock = {
   addEventListener: vi.fn(),
   createElement: (tagName: string) =>
     tagName === "div"
-      ? { appendChild: vi.fn(), style: {} }
+      ? { appendChild: vi.fn(), remove: vi.fn(), style: {} }
       : {
           getContext: () => stagingContext,
           height: 0,
@@ -374,8 +426,11 @@ beforeEach(() => {
   pixiMock.copyExternalImageToTexture.mockReset();
   pixiMock.displayFilters.length = 0;
   pixiMock.extractCanvas.mockClear();
+  pixiMock.init.mockReset();
+  pixiMock.init.mockResolvedValue(undefined);
   stagingContext.drawImage.mockClear();
-  pixiMock.render.mockClear();
+  pixiMock.render.mockReset();
+  pixiMock.cursorCircles.clear();
   pixiMock.externalSources.length = 0;
   pixiMock.sprites.length = 0;
   pixiMock.textures.length = 0;
@@ -388,6 +443,143 @@ afterEach(() => {
 });
 
 describe("push-presented Pixi scene", () => {
+  it("retains brush updates made while Pixi initialization is pending", async () => {
+    const editor = createMaskBrushEditor({
+      canvas: createBrushCanvas(),
+      width: 320,
+      height: 240,
+    });
+    let finishInit!: () => void;
+    const initPending = new Promise<void>((resolve) => {
+      finishInit = resolve;
+    });
+    let markInitStarted!: () => void;
+    const initStarted = new Promise<void>((resolve) => {
+      markInitStarted = resolve;
+    });
+    pixiMock.init.mockImplementationOnce(() => {
+      markInitStarted();
+      return initPending;
+    });
+    const channel = createChannel();
+    const { createPixiMediaScene } = await import("./pixi-media-scene");
+    const scenePending = createPixiMediaScene({
+      ...createSceneOptions(channel.channel),
+      maskBrush: { editor },
+    });
+    await initStarted;
+    const queued: Array<() => void> = [];
+    vi.stubGlobal("queueMicrotask", (callback: () => void) => {
+      queued.push(callback);
+    });
+    const flushQueued = () => {
+      for (const callback of queued.splice(0)) callback();
+    };
+
+    try {
+      editor.beginStroke({ x: 50, y: 60 }, { radius: 10 });
+      editor.extendStroke({ x: 70, y: 80 });
+      editor.setCursor({ x: 90, y: 100 });
+      expect(flushQueued).not.toThrow();
+      expect(pixiMock.render).not.toHaveBeenCalled();
+
+      finishInit();
+      const scene = await scenePending;
+      scene.initializeMedia({ height: 240, width: 320 });
+      channel.present(presentedFrame(1000));
+      expect(scene.getRenderCount?.()).toBe(1);
+      expect([...pixiMock.cursorCircles.values()].at(-1)).toEqual({
+        x: 90,
+        y: 100,
+        radius: 10,
+      });
+      expect(editor.getMaskBounds()).toEqual({
+        x: 60,
+        y: 70,
+        width: 40,
+        height: 40,
+      });
+    } finally {
+      finishInit();
+      (await scenePending).destroy();
+    }
+  });
+
+  it("repaints one coherent brush update per stroke move on a paused frame", async () => {
+    const editor = createMaskBrushEditor({
+      canvas: createBrushCanvas(),
+      width: 320,
+      height: 240,
+    });
+    const channel = createChannel();
+    const { createPixiMediaScene } = await import("./pixi-media-scene");
+    const scene = await createPixiMediaScene({
+      ...createSceneOptions(channel.channel),
+      maskBrush: { editor },
+    });
+    scene.initializeMedia({ height: 240, width: 320 });
+    const frame = presentedFrame(1000);
+    channel.present(frame);
+    expect(scene.getRenderCount?.()).toBe(1);
+    const renderedCursors: unknown[] = [];
+    pixiMock.render.mockImplementation(() => {
+      renderedCursors.push([...pixiMock.cursorCircles.values()].at(-1));
+    });
+    editor.beginStroke({ x: 50, y: 60 }, { radius: 10 });
+    expect(scene.getRenderCount?.()).toBe(1);
+    await Promise.resolve();
+    expect(scene.getRenderCount?.()).toBe(2);
+    expect(renderedCursors).toEqual([{ x: 50, y: 60, radius: 10 }]);
+    editor.extendStroke({ x: 70, y: 80 });
+    await Promise.resolve();
+    expect(scene.getRenderCount?.()).toBe(3);
+    expect(renderedCursors).toEqual([
+      { x: 50, y: 60, radius: 10 },
+      { x: 70, y: 80, radius: 10 },
+    ]);
+    editor.setCursor({ x: 90, y: 100 });
+    editor.setCursor({ x: 110, y: 120 });
+    await Promise.resolve();
+    expect(scene.getRenderCount?.()).toBe(4);
+    expect(renderedCursors.at(-1)).toEqual({ x: 110, y: 120, radius: 10 });
+    editor.clear();
+    await Promise.resolve();
+    expect(scene.getRenderCount?.()).toBe(5);
+    expect(renderedCursors.at(-1)).toEqual({ x: 110, y: 120, radius: 10 });
+    editor.setCursor(null);
+    await Promise.resolve();
+    expect(scene.getRenderCount?.()).toBe(6);
+    expect(renderedCursors.at(-1)).toBeUndefined();
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    expect(scene.getRenderCount?.()).toBe(6);
+    expect(frame.frame.close).toHaveBeenCalledTimes(1);
+    expect(pixiMock.tickerAdd).not.toHaveBeenCalled();
+    scene.destroy();
+  });
+
+  it("does not render a queued brush update after destruction", async () => {
+    const editor = createMaskBrushEditor({
+      canvas: createBrushCanvas(),
+      width: 320,
+      height: 240,
+    });
+    const channel = createChannel();
+    const { createPixiMediaScene } = await import("./pixi-media-scene");
+    const scene = await createPixiMediaScene({
+      ...createSceneOptions(channel.channel),
+      maskBrush: { editor },
+    });
+    scene.initializeMedia({ height: 240, width: 320 });
+    channel.present(presentedFrame(1000));
+    pixiMock.render.mockClear();
+    editor.beginStroke({ x: 50, y: 60 }, { radius: 10 });
+    scene.destroy();
+    await Promise.resolve();
+    editor.setCursor({ x: 70, y: 80 });
+    await Promise.resolve();
+    expect(pixiMock.render).not.toHaveBeenCalled();
+  });
+
   it("renders once per presented frame and nothing else", async () => {
     const channel = createChannel();
     const { createPixiMediaScene } = await import("./pixi-media-scene");
