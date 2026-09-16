@@ -22,6 +22,7 @@ const expectedWebRuntimeExports = [
   "BaseLabelStyle",
   "BaseMarkerStyle",
   "BaseMaskStyle",
+  "BaseOrientedBoxStyle",
   "BasePolygonStyle",
   "BasePolylineStyle",
   "BoxShape",

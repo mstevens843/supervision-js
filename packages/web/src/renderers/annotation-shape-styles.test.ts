@@ -27,6 +27,7 @@ describe("annotation shape styles", () => {
   it("returns no shape style when no shape-backed kind is configured", () => {
     expect(resolveAnnotationShapeStyle({})).toBeNull();
     expect(resolveAnnotationShapeStyle({ ellipseStyle: null })).toBeNull();
+    expect(resolveAnnotationShapeStyle({ orientedBoxStyle: null })).toBeNull();
   });
 
   it("lowers resolved ellipse instructions into the shape vocabulary", () => {
@@ -111,6 +112,73 @@ describe("annotation shape styles", () => {
         sizeSpace: MarkerSizeSpace.Screen,
       },
     ]);
+  });
+
+  it("lowers oriented-box points into one closed path instruction", () => {
+    const points = [
+      { x: 10, y: 20 },
+      { x: 40, y: 20 },
+      { x: 40, y: 50 },
+      { x: 10, y: 50 },
+    ] as const;
+    const style = resolveAnnotationShapeStyle({
+      orientedBoxStyle: {
+        resolve: () => ({
+          fill: { alpha: 0.16, color: 0x123456 },
+          points,
+          stroke: { alpha: 1, color: 0x123456, width: 2 },
+        }),
+      },
+    });
+
+    expect(style?.resolve(detection, context)).toEqual([
+      {
+        closed: true,
+        fill: { alpha: 0.16, color: 0x123456 },
+        kind: ShapeInstructionKind.Path,
+        segments: [points],
+        stroke: { alpha: 1, color: 0x123456, width: 2 },
+      },
+    ]);
+  });
+
+  it("gives the oriented-box path an invisible stroke when only a fill is configured", () => {
+    const points = [
+      { x: 10, y: 20 },
+      { x: 40, y: 20 },
+      { x: 40, y: 50 },
+      { x: 10, y: 50 },
+    ] as const;
+    const style = resolveAnnotationShapeStyle({
+      orientedBoxStyle: {
+        resolve: () => ({
+          fill: { alpha: 0.16, color: 0x123456 },
+          points,
+        }),
+      },
+    });
+
+    // The closed-path shape primitive requires a stroke even when the
+    // caller only wants a fill, so a fully transparent one stands in.
+    expect(style?.resolve(detection, context)).toEqual([
+      {
+        closed: true,
+        fill: { alpha: 0.16, color: 0x123456 },
+        kind: ShapeInstructionKind.Path,
+        segments: [points],
+        stroke: { alpha: 0, color: 0x000000, width: 0 },
+      },
+    ]);
+  });
+
+  it("skips detections the oriented-box style resolves to nothing", () => {
+    const resolve = vi.fn(() => undefined);
+    const style = resolveAnnotationShapeStyle({
+      orientedBoxStyle: { resolve },
+    });
+
+    expect(style?.resolve(detection, context)).toBeUndefined();
+    expect(resolve).toHaveBeenCalledWith(detection, context);
   });
 
   it("skips detections the ellipse style resolves to nothing", () => {

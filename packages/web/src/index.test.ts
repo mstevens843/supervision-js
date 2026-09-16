@@ -59,6 +59,7 @@ describe("package entrypoint", () => {
       "BaseLabelStyle",
       "BaseMarkerStyle",
       "BaseMaskStyle",
+      "BaseOrientedBoxStyle",
       "BasePolygonStyle",
       "BasePolylineStyle",
       "BoxShape",
@@ -166,6 +167,7 @@ describe("package entrypoint", () => {
       marker: expect.any(Function),
       mask: expect.any(Function),
       maskHalo: expect.any(Function),
+      orientedBox: expect.any(Function),
       polygon: expect.any(Function),
       polyline: expect.any(Function),
       region: expect.any(Function),
@@ -233,6 +235,7 @@ describe("package entrypoint", () => {
       Keypoint: "keypoint",
       Label: "label",
       Mask: "mask",
+      OrientedBox: "orientedBox",
       Polygon: "polygon",
       Polyline: "polyline",
     });

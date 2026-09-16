@@ -20,6 +20,7 @@ export const docsAnnotationRendererIds = [
   "mask-halo",
   "markers",
   "labels",
+  "oriented-box",
   "polygons",
   "polylines",
   "keypoints",
@@ -278,6 +279,29 @@ export const docsAnnotationRenderers: Readonly<
     description: "Class names and confidence",
     title: "Labels",
   },
+  "oriented-box": {
+    controls: [
+      {
+        key: "orientedBoxFillAlpha",
+        label: "Fill opacity",
+        max: 0.6,
+        min: 0,
+        step: 0.01,
+        unit: "percent",
+      },
+      {
+        key: "orientedBoxStrokeWidth",
+        label: "Stroke width",
+        max: 8,
+        min: 1,
+        step: 1,
+        unit: "pixels",
+      },
+    ],
+    description:
+      "Explicit rotated quadrilateral, drawn through the same closed-path fill and stroke as polygons",
+    title: "Oriented Box",
+  },
   polygons: {
     controls: [
       {
@@ -397,6 +421,7 @@ export function createDocsAnnotationRendererPresentation(
           markerShape: MarkerShape.Triangle,
         }
       : {}),
+    orientedBoxEnabled: renderer === "oriented-box",
     polygonsEnabled: renderer === "polygons",
     polylinesEnabled: renderer === "polylines",
     // The frame filter already scopes this page to the one derived trace, so
@@ -545,6 +570,17 @@ export function createDocsAnnotationRendererSnippet(
         },
         includeConfidence: ${settings.labelIncludeConfidence},
         textStyle: { fontSize: ${formatNumber(settings.labelFontSize)} },
+      }),
+    }),
+  ],
+});`;
+    case "oriented-box":
+      return `session.setPresentation({
+  renderers: [
+    annotationRenderers.orientedBox({
+      style: new BaseOrientedBoxStyle({
+        fill: { alpha: ${formatNumber(settings.orientedBoxFillAlpha)} },
+        stroke: { width: ${formatNumber(settings.orientedBoxStrokeWidth)} },
       }),
     }),
   ],

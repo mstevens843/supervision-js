@@ -1,13 +1,27 @@
 import { ShapeInstructionKind } from "supervision-js-core";
 import type {
   BoxCornerStyle,
+  ClosedPathShapeInstruction,
   EllipseDrawInstruction,
   EllipseShapeInstruction,
   EllipseStyle,
   MarkerStyle,
+  OrientedBoxDrawInstruction,
+  OrientedBoxStyle,
   ShapeDrawInstruction,
   ShapeStyle,
 } from "supervision-js-core";
+
+/**
+ * The generic closed-path shape primitive requires a stroke even when a
+ * detection only wants a fill. This fully transparent, zero-width stroke
+ * keeps the primitive's contract satisfied without drawing anything visible.
+ */
+const INVISIBLE_ORIENTED_BOX_STROKE = {
+  alpha: 0,
+  color: 0x000000,
+  width: 0,
+} as const;
 
 /**
  * Bridges public annotation renderer kinds onto the internal vector-layer
@@ -23,12 +37,14 @@ export function resolveAnnotationShapeStyle(styles: {
   readonly boxCornerStyle?: BoxCornerStyle | null;
   readonly ellipseStyle?: EllipseStyle | null;
   readonly markerStyle?: MarkerStyle | null;
+  readonly orientedBoxStyle?: OrientedBoxStyle | null;
 }): ShapeStyle | null {
   const boxCornerStyle = styles.boxCornerStyle ?? null;
   const ellipseStyle = styles.ellipseStyle ?? null;
   const markerStyle = styles.markerStyle ?? null;
+  const orientedBoxStyle = styles.orientedBoxStyle ?? null;
 
-  if (!boxCornerStyle && !ellipseStyle && !markerStyle) {
+  if (!boxCornerStyle && !ellipseStyle && !markerStyle && !orientedBoxStyle) {
     return null;
   }
 
@@ -55,6 +71,11 @@ export function resolveAnnotationShapeStyle(styles: {
       if (ellipse) {
         instructions.push(lowerEllipseInstruction(ellipse));
       }
+      const orientedBox = orientedBoxStyle?.resolve(detection, context);
+
+      if (orientedBox) {
+        instructions.push(lowerOrientedBoxInstruction(orientedBox));
+      }
 
       return instructions.length > 0 ? instructions : undefined;
     },
@@ -65,4 +86,16 @@ function lowerEllipseInstruction(
   instruction: EllipseDrawInstruction,
 ): EllipseShapeInstruction {
   return { ...instruction, kind: ShapeInstructionKind.Ellipse };
+}
+
+function lowerOrientedBoxInstruction(
+  instruction: OrientedBoxDrawInstruction,
+): ClosedPathShapeInstruction {
+  return {
+    closed: true,
+    fill: instruction.fill,
+    kind: ShapeInstructionKind.Path,
+    segments: [instruction.points],
+    stroke: instruction.stroke ?? INVISIBLE_ORIENTED_BOX_STROKE,
+  };
 }

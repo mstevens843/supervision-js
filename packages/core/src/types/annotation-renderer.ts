@@ -6,6 +6,7 @@ import type { LabelStyle } from "#types/label-style";
 import type { MaskHaloStyle } from "#types/mask-halo-style";
 import type { MaskStyle } from "#types/mask-style";
 import type { MarkerStyle } from "#types/marker-style";
+import type { OrientedBoxStyle } from "#types/oriented-box-style";
 import type { PolygonStyle } from "#types/polygon-style";
 import type { PolylineStyle } from "#types/polyline-style";
 import type { AnnotationStyleContext } from "#types/style";
@@ -26,6 +27,7 @@ export const annotationRendererKinds = [
   "mask",
   "maskHalo",
   "marker",
+  "orientedBox",
   "polygon",
   "polyline",
   "region",
@@ -50,6 +52,7 @@ export type AnnotationRenderer =
   | MaskAnnotationRenderer
   | MaskHaloAnnotationRenderer
   | MarkerAnnotationRenderer
+  | OrientedBoxAnnotationRenderer
   | PolygonAnnotationRenderer
   | PolylineAnnotationRenderer
   | RegionAnnotationRenderer;
@@ -114,6 +117,17 @@ export interface MaskHaloAnnotationRenderer extends BaseAnnotationRenderer {
 export interface MarkerAnnotationRenderer extends BaseAnnotationRenderer {
   readonly kind: "marker";
   readonly style?: MarkerStyle | null;
+}
+
+/**
+ * Draws one explicit oriented quadrilateral per detection.
+ *
+ * Presentation-only, like `box-corners` and `ellipse`: it never reinterprets
+ * `rect` as rotatable and never mutates semantic detection geometry.
+ */
+export interface OrientedBoxAnnotationRenderer extends BaseAnnotationRenderer {
+  readonly kind: "orientedBox";
+  readonly style?: OrientedBoxStyle | null;
 }
 
 export interface PolygonAnnotationRenderer extends BaseAnnotationRenderer {
@@ -364,6 +378,9 @@ export type AnnotationRendererFactory = {
   readonly marker: (
     options?: AnnotationRendererStyleOptions<"marker">,
   ) => MarkerAnnotationRenderer;
+  readonly orientedBox: (
+    options?: AnnotationRendererStyleOptions<"orientedBox">,
+  ) => OrientedBoxAnnotationRenderer;
   readonly polygon: (
     options?: AnnotationRendererStyleOptions<"polygon">,
   ) => PolygonAnnotationRenderer;
@@ -396,6 +413,7 @@ export const annotationRenderers: AnnotationRendererFactory = {
   mask: (options) => createAnnotationRenderer("mask", options),
   maskHalo: (options) => createAnnotationRenderer("maskHalo", options),
   marker: (options) => createAnnotationRenderer("marker", options),
+  orientedBox: (options) => createAnnotationRenderer("orientedBox", options),
   polygon: (options) => createAnnotationRenderer("polygon", options),
   polyline: (options) => createAnnotationRenderer("polyline", options),
   region: (options) => ({ kind: "region", ...options }),

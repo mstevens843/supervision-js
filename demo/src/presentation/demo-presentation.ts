@@ -7,6 +7,7 @@ import {
   BaseInteractionStyle,
   BaseKeypointStyle,
   BaseLabelStyle,
+  BaseOrientedBoxStyle,
   BasePolygonStyle,
   BasePolylineStyle,
   DEFAULT_DETECTION_CLASS_STYLES,
@@ -32,6 +33,7 @@ import {
   type MaskStyle,
   type MarkerStyle,
   type MediaRendererPresentation,
+  type OrientedBoxStyle,
   type PolygonStyle,
   type PolylineStyle,
   resolveDetectionClassColorStyle,
@@ -62,6 +64,7 @@ export interface DemoPresentationSettings {
   readonly labelsEnabled: boolean;
   readonly masksEnabled: boolean;
   readonly markersEnabled: boolean;
+  readonly orientedBoxEnabled: boolean;
   readonly polygonsEnabled: boolean;
   readonly polylinesEnabled: boolean;
   readonly boxCornerRadius: number;
@@ -94,6 +97,8 @@ export interface DemoPresentationSettings {
   readonly markerShape: MarkerShape;
   readonly markerSize: number;
   readonly markerStrokeWidth: number;
+  readonly orientedBoxFillAlpha: number;
+  readonly orientedBoxStrokeWidth: number;
   readonly polygonFillAlpha: number;
   readonly polygonStrokeWidth: number;
   readonly polylineStrokeWidth: number;
@@ -124,6 +129,7 @@ export type DemoPresentationLayerSetting =
   | "labelsEnabled"
   | "masksEnabled"
   | "markersEnabled"
+  | "orientedBoxEnabled"
   | "polygonsEnabled"
   | "polylinesEnabled";
 
@@ -140,6 +146,7 @@ const demoPresentationLayerSettings: readonly DemoPresentationLayerSetting[] = [
   "labelsEnabled",
   "masksEnabled",
   "markersEnabled",
+  "orientedBoxEnabled",
   "polygonsEnabled",
   "polylinesEnabled",
 ];
@@ -245,6 +252,9 @@ export const defaultDemoPresentationSettings: DemoPresentationSettings = {
   markerSize: 14,
   markerStrokeWidth: 2,
   markersEnabled: false,
+  orientedBoxEnabled: false,
+  orientedBoxFillAlpha: 0.16,
+  orientedBoxStrokeWidth: 2,
   polygonFillAlpha: 0.08,
   polygonStrokeWidth: 2,
   polygonsEnabled: true,
@@ -277,6 +287,9 @@ export function createDemoPresentation(
   const markerStyle = settings.markersEnabled
     ? createDemoMarkerStyle(settings)
     : null;
+  const orientedBoxStyle = settings.orientedBoxEnabled
+    ? createDemoOrientedBoxStyle(settings)
+    : null;
   const polygonStyle = settings.polygonsEnabled
     ? createDemoPolygonStyle(settings)
     : null;
@@ -300,6 +313,7 @@ export function createDemoPresentation(
     labelStyle,
     maskStyle,
     markerStyle,
+    orientedBoxStyle,
     polygonStyle,
     polylineStyle,
     maskHaloStyle,
@@ -317,6 +331,9 @@ export function createDemoPresentation(
         : []),
       ...(markerStyle
         ? [annotationRenderers.marker({ style: markerStyle })]
+        : []),
+      ...(orientedBoxStyle
+        ? [annotationRenderers.orientedBox({ style: orientedBoxStyle })]
         : []),
       ...(polygonStyle
         ? [annotationRenderers.polygon({ style: polygonStyle })]
@@ -367,6 +384,29 @@ function createDemoBoxCornerStyle(
     stroke: (detection) => ({
       color: resolveClassStyle(detection, settings).stroke,
       width: settings.boxCornerStrokeWidth,
+    }),
+  });
+}
+
+/**
+ * Draws the fixture's hand-authored `orientedBox` quadrilaterals. This never
+ * derives a quadrilateral from `rect`: it only draws detections that already
+ * carry explicit oriented-box geometry, so it renders nothing on fixtures
+ * that do not declare any.
+ */
+function createDemoOrientedBoxStyle(
+  settings: DemoPresentationSettings,
+): OrientedBoxStyle {
+  return new BaseOrientedBoxStyle({
+    fill: (detection) => ({
+      alpha: settings.orientedBoxFillAlpha,
+      color: resolveClassStyle(detection, settings).fill,
+    }),
+    shouldRender: (detection) => passesConfidenceThreshold(detection, settings),
+    stroke: (detection) => ({
+      alpha: 1,
+      color: resolveClassStyle(detection, settings).stroke,
+      width: settings.orientedBoxStrokeWidth,
     }),
   });
 }
@@ -942,6 +982,7 @@ function hasAnchorableGeometry(detection: Detection) {
     detection.rect !== undefined ||
     detection.mask !== undefined ||
     detection.polygon !== undefined ||
+    detection.orientedBox !== undefined ||
     detection.polyline !== undefined ||
     detection.keypoints !== undefined
   );

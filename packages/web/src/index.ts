@@ -149,6 +149,8 @@ export { BaseMaskStyle } from "supervision-js-core";
 export type { BaseMaskStyleOptions } from "supervision-js-core";
 export { BaseMarkerStyle } from "supervision-js-core";
 export type { BaseMarkerStyleOptions } from "supervision-js-core";
+export { BaseOrientedBoxStyle } from "supervision-js-core";
+export type { BaseOrientedBoxStyleOptions } from "supervision-js-core";
 export { BasePolygonStyle } from "supervision-js-core";
 export type { BasePolygonStyleOptions } from "supervision-js-core";
 export { BasePolylineStyle } from "supervision-js-core";
@@ -169,6 +171,7 @@ export {
   type MaskAnnotationRenderer,
   type MaskHaloAnnotationRenderer,
   type MarkerAnnotationRenderer,
+  type OrientedBoxAnnotationRenderer,
   type PolygonAnnotationRenderer,
   type PolylineAnnotationRenderer,
   RegionRendererComposeMode,
@@ -271,6 +274,11 @@ export type {
   MarkerStyleContext,
 } from "supervision-js-core";
 export type {
+  OrientedBoxDrawInstruction,
+  OrientedBoxStyle,
+  OrientedBoxStyleContext,
+} from "supervision-js-core";
+export type {
   PolygonDrawInstruction,
   PolygonStyle,
   PolygonStyleContext,
@@ -340,6 +348,7 @@ export {
   type DetectionMask,
   type KeypointEdge,
   type KeypointGeometry,
+  type OrientedBoxGeometry,
   type Point,
   type PolygonGeometry,
   type PolylineGeometry,
