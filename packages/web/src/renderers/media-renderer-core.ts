@@ -142,6 +142,7 @@ export async function createMediaRendererCore(
     maskStyle: options.maskStyle,
     markerStyle: options.markerStyle,
     orientedBoxStyle: options.orientedBoxStyle,
+    percentageBarStyle: options.percentageBarStyle,
     polygonStyle: options.polygonStyle,
     polylineStyle: options.polylineStyle,
     renderers: options.renderers,
@@ -1136,6 +1137,7 @@ export async function createMediaRendererCore(
       maskHaloStyle: currentPresentation.maskHaloStyle,
       maskStyle: currentPresentation.maskStyle,
       markerStyle: currentPresentation.markerStyle,
+      percentageBarStyle: currentPresentation.percentageBarStyle,
       maxDevicePixelRatio: options.maxDevicePixelRatio,
       orientedBoxStyle: currentPresentation.orientedBoxStyle,
       onPresentationUpdate(presentedSample) {

@@ -7,6 +7,7 @@ import type { MaskHaloStyle } from "#types/mask-halo-style";
 import type { MaskStyle } from "#types/mask-style";
 import type { MarkerStyle } from "#types/marker-style";
 import type { OrientedBoxStyle } from "#types/oriented-box-style";
+import type { PercentageBarStyle } from "#types/percentage-bar-style";
 import type { PolygonStyle } from "#types/polygon-style";
 import type { PolylineStyle } from "#types/polyline-style";
 import type { AnnotationStyleContext } from "#types/style";
@@ -28,6 +29,7 @@ export const annotationRendererKinds = [
   "maskHalo",
   "marker",
   "orientedBox",
+  "percentageBar",
   "polygon",
   "polyline",
   "region",
@@ -53,6 +55,7 @@ export type AnnotationRenderer =
   | MaskHaloAnnotationRenderer
   | MarkerAnnotationRenderer
   | OrientedBoxAnnotationRenderer
+  | PercentageBarAnnotationRenderer
   | PolygonAnnotationRenderer
   | PolylineAnnotationRenderer
   | RegionAnnotationRenderer;
@@ -128,6 +131,11 @@ export interface MarkerAnnotationRenderer extends BaseAnnotationRenderer {
 export interface OrientedBoxAnnotationRenderer extends BaseAnnotationRenderer {
   readonly kind: "orientedBox";
   readonly style?: OrientedBoxStyle | null;
+}
+
+export interface PercentageBarAnnotationRenderer extends BaseAnnotationRenderer {
+  readonly kind: "percentageBar";
+  readonly style?: PercentageBarStyle | null;
 }
 
 export interface PolygonAnnotationRenderer extends BaseAnnotationRenderer {
@@ -381,6 +389,9 @@ export type AnnotationRendererFactory = {
   readonly orientedBox: (
     options?: AnnotationRendererStyleOptions<"orientedBox">,
   ) => OrientedBoxAnnotationRenderer;
+  readonly percentageBar: (
+    options?: AnnotationRendererStyleOptions<"percentageBar">,
+  ) => PercentageBarAnnotationRenderer;
   readonly polygon: (
     options?: AnnotationRendererStyleOptions<"polygon">,
   ) => PolygonAnnotationRenderer;
@@ -414,6 +425,8 @@ export const annotationRenderers: AnnotationRendererFactory = {
   maskHalo: (options) => createAnnotationRenderer("maskHalo", options),
   marker: (options) => createAnnotationRenderer("marker", options),
   orientedBox: (options) => createAnnotationRenderer("orientedBox", options),
+  percentageBar: (options) =>
+    createAnnotationRenderer("percentageBar", options),
   polygon: (options) => createAnnotationRenderer("polygon", options),
   polyline: (options) => createAnnotationRenderer("polyline", options),
   region: (options) => ({ kind: "region", ...options }),

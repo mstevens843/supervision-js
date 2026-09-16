@@ -9,6 +9,7 @@ import type { MaskHaloStyle } from "#types/mask-halo-style";
 import type { MaskStyle } from "#types/mask-style";
 import type { MarkerStyle } from "#types/marker-style";
 import type { OrientedBoxStyle } from "#types/oriented-box-style";
+import type { PercentageBarStyle } from "#types/percentage-bar-style";
 import type { Point } from "#types/detections";
 import type { ViewportTransform } from "#types/viewport";
 import type { PolygonStyle } from "#types/polygon-style";
@@ -296,6 +297,7 @@ export interface MediaRendererPresentation {
   readonly maskStyle?: MaskStyle | null;
   readonly markerStyle?: MarkerStyle | null;
   readonly orientedBoxStyle?: OrientedBoxStyle | null;
+  readonly percentageBarStyle?: PercentageBarStyle | null;
   readonly polygonStyle?: PolygonStyle | null;
   readonly polylineStyle?: PolylineStyle | null;
   readonly ellipseStyle?: EllipseStyle | null;

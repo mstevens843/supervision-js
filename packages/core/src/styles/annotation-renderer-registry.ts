@@ -8,6 +8,7 @@ import {
   createDefaultMaskStyle,
   createDefaultMarkerStyle,
   createDefaultOrientedBoxStyle,
+  createDefaultPercentageBarStyle,
   createDefaultPolygonStyle,
   createDefaultPolylineStyle,
 } from "#styles/default-annotation-presentation";
@@ -28,6 +29,7 @@ export const styledAnnotationRendererKinds = [
   "maskHalo",
   "marker",
   "orientedBox",
+  "percentageBar",
   "polygon",
   "polyline",
 ] as const;
@@ -145,6 +147,11 @@ export const annotationRendererRegistry: AnnotationRendererRegistry = {
     cardinality: "singleton",
     createCanonicalStyle: createDefaultOrientedBoxStyle,
     styleField: "orientedBoxStyle",
+  },
+  percentageBar: {
+    cardinality: "singleton",
+    createCanonicalStyle: createDefaultPercentageBarStyle,
+    styleField: "percentageBarStyle",
   },
   polygon: {
     cardinality: "singleton",

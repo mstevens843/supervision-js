@@ -122,6 +122,7 @@ describe("annotation renderer presentation", () => {
       maskHalo: annotationRenderers.maskHalo,
       marker: annotationRenderers.marker,
       orientedBox: annotationRenderers.orientedBox,
+      percentageBar: annotationRenderers.percentageBar,
       polygon: annotationRenderers.polygon,
       polyline: annotationRenderers.polyline,
     } as const;

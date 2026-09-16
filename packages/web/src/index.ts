@@ -172,6 +172,7 @@ export {
   type MaskHaloAnnotationRenderer,
   type MarkerAnnotationRenderer,
   type OrientedBoxAnnotationRenderer,
+  type PercentageBarAnnotationRenderer,
   type PolygonAnnotationRenderer,
   type PolylineAnnotationRenderer,
   RegionRendererComposeMode,
@@ -272,6 +273,14 @@ export type {
   MarkerDrawInstruction,
   MarkerStyle,
   MarkerStyleContext,
+} from "supervision-js-core";
+export {
+  BasePercentageBarStyle,
+  PercentageBarPlacement,
+  type BasePercentageBarStyleOptions,
+  type PercentageBarDrawInstruction,
+  type PercentageBarStyle,
+  type PercentageBarStyleContext,
 } from "supervision-js-core";
 export type {
   OrientedBoxDrawInstruction,

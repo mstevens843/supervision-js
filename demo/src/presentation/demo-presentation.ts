@@ -2,6 +2,7 @@ import {
   BoxStrokeAlignment,
   BoxShape,
   BaseMarkerStyle,
+  BasePercentageBarStyle,
   BaseFocusStyle,
   BaseBoxCornerStyle,
   BaseInteractionStyle,
@@ -17,6 +18,7 @@ import {
   LabelPlacement,
   MarkerShape,
   MaskRenderMode,
+  PercentageBarPlacement,
   annotationRenderers,
   type BoxDrawInstruction,
   type BoxCornerStyle,
@@ -34,6 +36,7 @@ import {
   type MarkerStyle,
   type MediaRendererPresentation,
   type OrientedBoxStyle,
+  type PercentageBarStyle,
   type PolygonStyle,
   type PolylineStyle,
   resolveDetectionClassColorStyle,
@@ -65,8 +68,12 @@ export interface DemoPresentationSettings {
   readonly masksEnabled: boolean;
   readonly markersEnabled: boolean;
   readonly orientedBoxEnabled: boolean;
+  readonly percentageBarsEnabled: boolean;
   readonly polygonsEnabled: boolean;
   readonly polylinesEnabled: boolean;
+  readonly percentageBarHeight: number;
+  readonly percentageBarFillAlpha: number;
+  readonly percentageBarPlacement: PercentageBarPlacement;
   readonly boxCornerRadius: number;
   readonly boxCornerLength: number;
   readonly boxCornerStrokeWidth: number;
@@ -130,6 +137,7 @@ export type DemoPresentationLayerSetting =
   | "masksEnabled"
   | "markersEnabled"
   | "orientedBoxEnabled"
+  | "percentageBarsEnabled"
   | "polygonsEnabled"
   | "polylinesEnabled";
 
@@ -147,6 +155,7 @@ const demoPresentationLayerSettings: readonly DemoPresentationLayerSetting[] = [
   "masksEnabled",
   "markersEnabled",
   "orientedBoxEnabled",
+  "percentageBarsEnabled",
   "polygonsEnabled",
   "polylinesEnabled",
 ];
@@ -255,6 +264,10 @@ export const defaultDemoPresentationSettings: DemoPresentationSettings = {
   orientedBoxEnabled: false,
   orientedBoxFillAlpha: 0.16,
   orientedBoxStrokeWidth: 2,
+  percentageBarsEnabled: false,
+  percentageBarFillAlpha: 1,
+  percentageBarHeight: 8,
+  percentageBarPlacement: PercentageBarPlacement.Top,
   polygonFillAlpha: 0.08,
   polygonStrokeWidth: 2,
   polygonsEnabled: true,
@@ -290,6 +303,9 @@ export function createDemoPresentation(
   const orientedBoxStyle = settings.orientedBoxEnabled
     ? createDemoOrientedBoxStyle(settings)
     : null;
+  const percentageBarStyle = settings.percentageBarsEnabled
+    ? createDemoPercentageBarStyle(settings)
+    : null;
   const polygonStyle = settings.polygonsEnabled
     ? createDemoPolygonStyle(settings)
     : null;
@@ -314,6 +330,7 @@ export function createDemoPresentation(
     maskStyle,
     markerStyle,
     orientedBoxStyle,
+    percentageBarStyle,
     polygonStyle,
     polylineStyle,
     maskHaloStyle,
@@ -334,6 +351,9 @@ export function createDemoPresentation(
         : []),
       ...(orientedBoxStyle
         ? [annotationRenderers.orientedBox({ style: orientedBoxStyle })]
+        : []),
+      ...(percentageBarStyle
+        ? [annotationRenderers.percentageBar({ style: percentageBarStyle })]
         : []),
       ...(polygonStyle
         ? [annotationRenderers.polygon({ style: polygonStyle })]
@@ -692,6 +712,20 @@ function createDemoMaskStyle(settings: DemoPresentationSettings): MaskStyle {
       };
     },
   };
+}
+
+function createDemoPercentageBarStyle(
+  settings: DemoPresentationSettings,
+): PercentageBarStyle {
+  return new BasePercentageBarStyle({
+    fill: (detection) => ({
+      alpha: settings.percentageBarFillAlpha,
+      color: resolveClassStyle(detection, settings).stroke,
+    }),
+    height: settings.percentageBarHeight,
+    placement: settings.percentageBarPlacement,
+    shouldRender: (detection) => passesConfidenceThreshold(detection, settings),
+  });
 }
 
 function createDemoMaskHaloStyle(

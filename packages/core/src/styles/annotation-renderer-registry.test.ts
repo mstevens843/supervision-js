@@ -37,6 +37,7 @@ const expectedStyleFields = {
   maskHalo: "maskHaloStyle",
   marker: "markerStyle",
   orientedBox: "orientedBoxStyle",
+  percentageBar: "percentageBarStyle",
   polygon: "polygonStyle",
   polyline: "polylineStyle",
 } as const satisfies Record<
@@ -63,6 +64,7 @@ const styleFieldPairingIsExact: {
   maskHalo: true,
   marker: true,
   orientedBox: true,
+  percentageBar: true,
   polygon: true,
   polyline: true,
 };
@@ -85,6 +87,7 @@ const expectedCanonicalStyles = {
   // The oriented-box canonical style is opt-in, like box-corners and ellipse,
   // and therefore does not appear in the default presentation.
   orientedBox: null,
+  percentageBar: null,
   polygon: BasePolygonStyle,
   polyline: BasePolylineStyle,
 } as const satisfies Record<

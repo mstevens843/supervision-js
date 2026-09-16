@@ -34,6 +34,7 @@ export function resolveAnnotationRendererPresentation(
     maskStyle: null,
     markerStyle: null,
     orientedBoxStyle: null,
+    percentageBarStyle: null,
     polygonStyle: null,
     polylineStyle: null,
   };

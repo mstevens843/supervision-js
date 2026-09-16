@@ -95,6 +95,8 @@ export { BaseMarkerStyle } from "#styles/marker-style";
 export type { BaseMarkerStyleOptions } from "#types/marker-style";
 export { BaseOrientedBoxStyle } from "#styles/oriented-box-style";
 export type { BaseOrientedBoxStyleOptions } from "#styles/oriented-box-style";
+export { BasePercentageBarStyle } from "#styles/percentage-bar-style";
+export type { BasePercentageBarStyleOptions } from "#types/percentage-bar-style";
 export { BasePolygonStyle } from "#styles/polygon-style";
 export type { BasePolygonStyleOptions } from "#styles/polygon-style";
 export { BasePolylineStyle } from "#styles/polyline-style";
@@ -120,6 +122,7 @@ export {
   type MaskHaloAnnotationRenderer,
   type MarkerAnnotationRenderer,
   type OrientedBoxAnnotationRenderer,
+  type PercentageBarAnnotationRenderer,
   type PolygonAnnotationRenderer,
   type PolylineAnnotationRenderer,
   RegionRendererComposeMode,
@@ -262,6 +265,12 @@ export type {
   BoxCornerStyle,
   BoxCornerStyleContext,
 } from "#types/box-corner-style";
+export { PercentageBarPlacement } from "#types/percentage-bar-style";
+export type {
+  PercentageBarDrawInstruction,
+  PercentageBarStyle,
+  PercentageBarStyleContext,
+} from "#types/percentage-bar-style";
 export type {
   EllipseGeometry,
   MarkerGeometry,

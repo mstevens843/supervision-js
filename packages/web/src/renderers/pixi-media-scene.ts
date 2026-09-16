@@ -11,6 +11,7 @@ import {
   type MarkerStyle,
   type MaskHaloStyle,
   type OrientedBoxStyle,
+  type PercentageBarStyle,
   type PolygonStyle,
   type RegionAnnotationRenderer,
   type RegionRendererTarget,
@@ -281,6 +282,8 @@ export async function createPixiMediaScene(
   let currentMarkerStyle: MarkerStyle | null = options.markerStyle ?? null;
   let currentOrientedBoxStyle: OrientedBoxStyle | null =
     options.orientedBoxStyle ?? null;
+  let currentPercentageBarStyle: PercentageBarStyle | null =
+    options.percentageBarStyle ?? null;
   let currentRegionRenderers: readonly RegionAnnotationRenderer[] =
     options.regionRenderers;
   let regionMaskCoverageKey = resolveRegionMaskCoverageKey(
@@ -1399,7 +1402,8 @@ export async function createPixiMediaScene(
         presentation.boxCornerStyle !== undefined ||
         presentation.ellipseStyle !== undefined ||
         presentation.markerStyle !== undefined ||
-        presentation.orientedBoxStyle !== undefined
+        presentation.orientedBoxStyle !== undefined ||
+        presentation.percentageBarStyle !== undefined
       ) {
         if (presentation.boxCornerStyle !== undefined) {
           currentBoxCornerStyle = presentation.boxCornerStyle;
@@ -1412,6 +1416,9 @@ export async function createPixiMediaScene(
         }
         if (presentation.orientedBoxStyle !== undefined) {
           currentOrientedBoxStyle = presentation.orientedBoxStyle;
+        }
+        if (presentation.percentageBarStyle !== undefined) {
+          currentPercentageBarStyle = presentation.percentageBarStyle;
         }
         vectorLayer.setStyles({ shapeStyle: resolveVectorShapeStyle() });
       }
@@ -1980,6 +1987,7 @@ export async function createPixiMediaScene(
       ellipseStyle: currentEllipseStyle,
       markerStyle: currentMarkerStyle,
       orientedBoxStyle: currentOrientedBoxStyle,
+      percentageBarStyle: currentPercentageBarStyle,
     });
     const baseShapeStyle = options.shapeStyle ?? null;
 
