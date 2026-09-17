@@ -60,15 +60,18 @@ minimum-area box for the same object.
 Nothing in `supervision-js` computes an oriented box from a mask or a plain
 `rect`. A producer that only has one of those, such as an oriented-object
 detector that emits four corner coordinates directly, supplies
-`detection.orientedBox` itself. `BaseOrientedBoxStyle` skips a detection that
-has fewer than four points or whose quadrilateral has zero area, the same way
-`BasePolygonStyle` skips a degenerate polygon.
+`detection.orientedBox` itself. Frame validation requires exactly four points
+with finite coordinates. Producers must supply a convex quadrilateral in
+clockwise perimeter order. `BaseOrientedBoxStyle` also skips zero-area geometry;
+it does not repair invalid vertex ordering.
 
 The renderer reuses the existing closed-path fill and stroke drawing that
-polygons use; it does not introduce a second rasterization path. Like
-`box-corners` and `ellipse`, it is presentation-only: it is not pickable
-through the same drag-to-edit affordances as polygon vertices, and it never
-mutates semantic detection geometry.
+polygons use; it does not introduce a second rasterization path. The renderer
+only controls presentation. An editable session can select and move the whole
+detection, translating its OBB vertices along with its other geometry. OBB
+rotation and individual vertex editing are not supported. If the detection
+also has an editable `rect`, its resize handles change only that rectangle,
+not the independent OBB. Both geometries remain visible in the editing preview.
 
 The playground's basketball fixture pairs its real SAM3-derived basketball
 detections with a hand-authored oriented box: a fixed rotation of the

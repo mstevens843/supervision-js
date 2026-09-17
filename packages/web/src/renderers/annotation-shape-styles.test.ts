@@ -142,7 +142,7 @@ describe("annotation shape styles", () => {
     ]);
   });
 
-  it("gives the oriented-box path an invisible stroke when only a fill is configured", () => {
+  it("preserves a fill-only oriented box without adding a stroke", () => {
     const points = [
       { x: 10, y: 20 },
       { x: 40, y: 20 },
@@ -158,15 +158,13 @@ describe("annotation shape styles", () => {
       },
     });
 
-    // The closed-path shape primitive requires a stroke even when the
-    // caller only wants a fill, so a fully transparent one stands in.
     expect(style?.resolve(detection, context)).toEqual([
       {
         closed: true,
         fill: { alpha: 0.16, color: 0x123456 },
         kind: ShapeInstructionKind.Path,
         segments: [points],
-        stroke: { alpha: 0, color: 0x000000, width: 0 },
+        stroke: undefined,
       },
     ]);
   });

@@ -17,17 +17,6 @@ import type {
 } from "supervision-js-core";
 
 /**
- * The generic closed-path shape primitive requires a stroke even when a
- * detection only wants a fill. This fully transparent, zero-width stroke
- * keeps the primitive's contract satisfied without drawing anything visible.
- */
-const INVISIBLE_ORIENTED_BOX_STROKE = {
-  alpha: 0,
-  color: 0x000000,
-  width: 0,
-} as const;
-
-/**
  * Bridges public annotation renderer kinds onto the internal vector-layer
  * shape pipeline.
  *
@@ -157,6 +146,6 @@ function lowerOrientedBoxInstruction(
     fill: instruction.fill,
     kind: ShapeInstructionKind.Path,
     segments: [instruction.points],
-    stroke: instruction.stroke ?? INVISIBLE_ORIENTED_BOX_STROKE,
+    stroke: instruction.stroke,
   };
 }

@@ -127,15 +127,13 @@ function drawEditingPreview(
     detection,
     styleContext,
   )!;
-  // A skeleton's rect is part of its geometry, so it previews alongside the
-  // keypoints; polygon, polyline, mask, and oriented-box rects are derived
-  // bounds and are not.
+  // Rects coexist with keypoints and OBBs as independent editable geometry.
+  // Polygon, polyline and mask rects are derived bounds instead.
   if (
     detection.rect &&
     !detection.mask &&
     !detection.polygon &&
-    !detection.polyline &&
-    !detection.orientedBox
+    !detection.polyline
   ) {
     const { x, y, width, height } = detection.rect;
     // The source detection is hidden while it is edited, so the preview
@@ -187,13 +185,7 @@ function drawEditingPreview(
       viewportScale,
     );
   }
-  // An oriented box also carries a derived axis-aligned `rect` (used for
-  // hit-testing and handles), which the branch above now deliberately
-  // excludes -- without this branch the drag preview would fall back to that
-  // AABB and the rotation would disappear while dragging. Drawn as a closed
-  // quadrilateral from the detection's own (already-translated) four
-  // vertices, the same fill/stroke shape BaseOrientedBoxStyle produces for
-  // normal, non-editing rendering (see oriented-box-style.ts).
+  // Keep the OBB's own vertices visible alongside any independent rect.
   if (detection.orientedBox) {
     graphics
       .poly(

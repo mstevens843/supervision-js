@@ -46,7 +46,7 @@ export interface BaseOrientedBoxStyleOptions {
  * into a renderer-neutral closed-path draw instruction, the same fill/stroke
  * shape `BasePolygonStyle` produces. A quadrilateral is skipped, rather than
  * emitted as an invalid or degenerate draw instruction, when it has fewer
- * than four vertices, a non-finite (NaN/Infinity) coordinate, or exactly
+ * or more than four vertices, a non-finite (NaN/Infinity) coordinate, or exactly
  * zero area (`polygonArea` already returns 0 for fewer than three points).
  * There is no near-zero/epsilon tolerance; only exact zero area is rejected.
  */

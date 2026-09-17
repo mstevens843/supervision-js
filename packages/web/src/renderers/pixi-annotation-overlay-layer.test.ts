@@ -2,6 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   AnnotationGestureStateKind,
+  applyAnnotationHandleDrag,
+  getAnnotationHandles,
   KeypointMarkerShape,
 } from "supervision-js-core";
 
@@ -450,7 +452,7 @@ describe("Pixi annotation overlay presentation", () => {
     expect(graphics.roundRect).not.toHaveBeenCalled();
   });
 
-  it("draws the oriented quadrilateral, not the axis-aligned rect, for a detection carrying both (OBB plus rect)", () => {
+  it("previews both independent geometries while moving an OBB plus rect", () => {
     const graphics = createGraphicsMock();
     const detection = {
       id: "basketball-1",
@@ -499,20 +501,77 @@ describe("Pixi annotation overlay presentation", () => {
       viewportScale: 1,
     });
 
-    // The regression this guards against: a detection carrying both a `rect`
-    // (the derived AABB used for hit-testing/handles) and an `orientedBox`
-    // must not fall back to the axis-aligned box-preview path just because
-    // `rect` happens to be present.
-    expect(graphics.roundRect).not.toHaveBeenCalled();
+    expect(graphics.roundRect).toHaveBeenCalledWith(40, 50, 20, 20, 1);
     expect(graphics.poly).toHaveBeenCalledWith(
       translatedPoints.flatMap(({ x, y }) => [x, y]),
       true,
     );
     expect(graphics.moveTo).toHaveBeenCalledWith(50, 50);
-    expect(graphics.lineTo).toHaveBeenNthCalledWith(1, 60, 60);
-    expect(graphics.lineTo).toHaveBeenNthCalledWith(2, 50, 70);
-    expect(graphics.lineTo).toHaveBeenNthCalledWith(3, 40, 60);
-    expect(graphics.closePath).toHaveBeenCalledTimes(1);
+    expect(graphics.lineTo.mock.calls.slice(-3)).toEqual([
+      [60, 60],
+      [50, 70],
+      [40, 60],
+    ]);
+    expect(graphics.closePath).toHaveBeenCalledTimes(2);
+  });
+
+  it("previews a resized rect without reshaping its independent OBB", () => {
+    const graphics = createGraphicsMock();
+    const detection = {
+      id: "ball",
+      orientedBox: {
+        points: [
+          { x: 20, y: 10 },
+          { x: 30, y: 20 },
+          { x: 20, y: 30 },
+          { x: 10, y: 20 },
+        ] as const,
+      },
+      rect: { x: 20, y: 20, width: 20, height: 20 },
+    };
+    const handle = getAnnotationHandles(detection).find(
+      ({ point }) => point.x === 30 && point.y === 30,
+    )!;
+    const preview = applyAnnotationHandleDrag(detection, handle, {
+      x: 50,
+      y: 40,
+    });
+    expect(preview.rect).toEqual({ x: 30, y: 25, width: 40, height: 30 });
+    expect(preview.orientedBox).toEqual(detection.orientedBox);
+    const engine = {
+      getState: () => ({
+        activeDetectionId: detection.id,
+        activeHandleId: handle.id,
+        kind: AnnotationGestureStateKind.Resizing,
+        pointerId: 1,
+        preview,
+      }),
+      hasCreationTool: () => false,
+    };
+    const layer = createPixiAnnotationOverlayLayer(engine as never);
+    layer.attachGraphics(graphics as never);
+    layer.draw({
+      frame: { detections: [detection], mediaTime: 0 },
+      marquee: null,
+      mediaHeight: 100,
+      mediaWidth: 100,
+      now: 0,
+      pointer: null,
+      selectedDetectionIds: [detection.id],
+      viewportScale: 1,
+    });
+
+    expect(graphics.roundRect).toHaveBeenCalledWith(10, 10, 40, 30, 1);
+    expect(graphics.lineTo.mock.calls.slice(0, 3)).toEqual([
+      [50, 10],
+      [50, 40],
+      [10, 40],
+    ]);
+    expect(graphics.poly).toHaveBeenCalledWith(
+      detection.orientedBox.points.flatMap(({ x, y }) => [x, y]),
+      true,
+    );
+    expect(graphics.closePath).toHaveBeenCalledTimes(2);
   });
 
   it("lets keypoint handles hide behind their markers with keypointAlpha 0", () => {
