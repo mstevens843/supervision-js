@@ -128,12 +128,14 @@ function drawEditingPreview(
     styleContext,
   )!;
   // A skeleton's rect is part of its geometry, so it previews alongside the
-  // keypoints; polygon, polyline and mask rects are derived bounds and are not.
+  // keypoints; polygon, polyline, mask, and oriented-box rects are derived
+  // bounds and are not.
   if (
     detection.rect &&
     !detection.mask &&
     !detection.polygon &&
-    !detection.polyline
+    !detection.polyline &&
+    !detection.orientedBox
   ) {
     const { x, y, width, height } = detection.rect;
     // The source detection is hidden while it is edited, so the preview
@@ -180,6 +182,28 @@ function drawEditingPreview(
     drawPixiPath(
       graphics,
       detection.polygon.points,
+      true,
+      stroke,
+      viewportScale,
+    );
+  }
+  // An oriented box also carries a derived axis-aligned `rect` (used for
+  // hit-testing and handles), which the branch above now deliberately
+  // excludes -- without this branch the drag preview would fall back to that
+  // AABB and the rotation would disappear while dragging. Drawn as a closed
+  // quadrilateral from the detection's own (already-translated) four
+  // vertices, the same fill/stroke shape BaseOrientedBoxStyle produces for
+  // normal, non-editing rendering (see oriented-box-style.ts).
+  if (detection.orientedBox) {
+    graphics
+      .poly(
+        detection.orientedBox.points.flatMap(({ x, y }) => [x, y]),
+        true,
+      )
+      .fill(polygonFill);
+    drawPixiPath(
+      graphics,
+      detection.orientedBox.points,
       true,
       stroke,
       viewportScale,

@@ -389,6 +389,132 @@ describe("Pixi annotation overlay presentation", () => {
     );
   });
 
+  it("keeps an oriented box visible as a rotated quadrilateral while dragging (OBB-only detection)", () => {
+    const graphics = createGraphicsMock();
+    const detection = {
+      id: "obb-1",
+      orientedBox: {
+        points: [
+          { x: 20, y: 10 },
+          { x: 30, y: 20 },
+          { x: 20, y: 30 },
+          { x: 10, y: 20 },
+        ] as const,
+      },
+    };
+    const frame = { detections: [detection], mediaTime: 0 };
+    const translatedPoints = [
+      { x: 50, y: 50 },
+      { x: 60, y: 60 },
+      { x: 50, y: 70 },
+      { x: 40, y: 60 },
+    ] as const;
+    const engine = {
+      getState: () => ({
+        activeDetectionId: "obb-1",
+        activeHandleId: null,
+        kind: AnnotationGestureStateKind.Moving,
+        pointerId: 1,
+        preview: { ...detection, orientedBox: { points: translatedPoints } },
+      }),
+      hasCreationTool: () => false,
+    };
+    const layer = createPixiAnnotationOverlayLayer(engine as never);
+
+    layer.attachGraphics(graphics as never);
+    layer.draw({
+      frame,
+      marquee: null,
+      mediaHeight: 100,
+      mediaWidth: 100,
+      now: 0,
+      pointer: null,
+      selectedDetectionIds: ["obb-1"],
+      viewportScale: 1,
+    });
+
+    // Testing coordinate translation alone (e.g. just the first point, or a
+    // derived center) would pass even if the preview silently degenerated
+    // into a 2-point line or an axis-aligned box -- assert the actual
+    // drawing commands use all four translated vertices, in order, and
+    // close the path.
+    expect(graphics.poly).toHaveBeenCalledWith(
+      translatedPoints.flatMap(({ x, y }) => [x, y]),
+      true,
+    );
+    expect(graphics.moveTo).toHaveBeenCalledWith(50, 50);
+    expect(graphics.lineTo).toHaveBeenNthCalledWith(1, 60, 60);
+    expect(graphics.lineTo).toHaveBeenNthCalledWith(2, 50, 70);
+    expect(graphics.lineTo).toHaveBeenNthCalledWith(3, 40, 60);
+    expect(graphics.closePath).toHaveBeenCalledTimes(1);
+    expect(graphics.roundRect).not.toHaveBeenCalled();
+  });
+
+  it("draws the oriented quadrilateral, not the axis-aligned rect, for a detection carrying both (OBB plus rect)", () => {
+    const graphics = createGraphicsMock();
+    const detection = {
+      id: "basketball-1",
+      orientedBox: {
+        points: [
+          { x: 20, y: 10 },
+          { x: 30, y: 20 },
+          { x: 20, y: 30 },
+          { x: 10, y: 20 },
+        ] as const,
+      },
+      rect: { height: 20, width: 20, x: 20, y: 20 },
+    };
+    const frame = { detections: [detection], mediaTime: 0 };
+    const translatedPoints = [
+      { x: 50, y: 50 },
+      { x: 60, y: 60 },
+      { x: 50, y: 70 },
+      { x: 40, y: 60 },
+    ] as const;
+    const engine = {
+      getState: () => ({
+        activeDetectionId: "basketball-1",
+        activeHandleId: null,
+        kind: AnnotationGestureStateKind.Moving,
+        pointerId: 1,
+        preview: {
+          ...detection,
+          orientedBox: { points: translatedPoints },
+          rect: { ...detection.rect, x: 50, y: 60 },
+        },
+      }),
+      hasCreationTool: () => false,
+    };
+    const layer = createPixiAnnotationOverlayLayer(engine as never);
+
+    layer.attachGraphics(graphics as never);
+    layer.draw({
+      frame,
+      marquee: null,
+      mediaHeight: 100,
+      mediaWidth: 100,
+      now: 0,
+      pointer: null,
+      selectedDetectionIds: ["basketball-1"],
+      viewportScale: 1,
+    });
+
+    // The regression this guards against: a detection carrying both a `rect`
+    // (the derived AABB used for hit-testing/handles) and an `orientedBox`
+    // must not fall back to the axis-aligned box-preview path just because
+    // `rect` happens to be present.
+    expect(graphics.roundRect).not.toHaveBeenCalled();
+    expect(graphics.poly).toHaveBeenCalledWith(
+      translatedPoints.flatMap(({ x, y }) => [x, y]),
+      true,
+    );
+    expect(graphics.moveTo).toHaveBeenCalledWith(50, 50);
+    expect(graphics.lineTo).toHaveBeenNthCalledWith(1, 60, 60);
+    expect(graphics.lineTo).toHaveBeenNthCalledWith(2, 50, 70);
+    expect(graphics.lineTo).toHaveBeenNthCalledWith(3, 40, 60);
+    expect(graphics.closePath).toHaveBeenCalledTimes(1);
+  });
+
   it("lets keypoint handles hide behind their markers with keypointAlpha 0", () => {
     const graphics = createGraphicsMock();
     const frame = {
